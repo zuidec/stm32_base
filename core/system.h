@@ -1,7 +1,7 @@
 #ifndef INC_SYSTEM_H
 #define INC_SYSTEM_H
 
-#include "common-defines.h"
+#include <stdint.h>
 
 void system_setup(void);
 uint64_t system_get_ticks(void);

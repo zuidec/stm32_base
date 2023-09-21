@@ -2,8 +2,8 @@
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/cm3/nvic.h>
 
-#include "core/uart.h"
-#include "core/fifo.h"
+#include "uart.h"
+#include "drivers/fifo.h"
 
 #define BAUD_RATE           (115200)
 #define FIFO_BUFFER_SIZE    (128)    // Needs to be a power of 2 in order for the mask to work

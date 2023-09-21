@@ -1,7 +1,8 @@
 #ifndef INC_FIFO_H
 #define INC_FIFO_H
 
-#include "common-defines.h"
+#include <stdint.h>
+#include <stdbool.h>
 
 typedef struct fifo_buffer_t    {
     

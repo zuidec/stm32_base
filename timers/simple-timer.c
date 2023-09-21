@@ -1,5 +1,5 @@
 #include "core/system.h"
-#include "core/simple-timer.h"
+#include "simple-timer.h"
 
 void simple_timer_setup(simple_timer_t* timer, uint64_t wait_time, bool auto_reset) {
   timer->wait_time = wait_time;

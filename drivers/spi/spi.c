@@ -2,13 +2,13 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/cm3/nvic.h>
 
-#include "core/spi.h"
+#include "spi.h"
 
 
 
 static uint8_t data_buffer[FIFO_BUFFER_SIZE] = {0U};
 
-volatile uint32_t spi1_isr_fifo_address;
+fifo_buffer_t* spi1_isr_fifo_address;
 
 void spi1_isr(void) {
     // Reset interrupt flags
@@ -110,10 +110,11 @@ uint32_t spi_read_bytes(spi_handle_t* spi, uint8_t* data, uint32_t bytes_to_read
 uint8_t spi_read_byte(spi_handle_t* spi) {
 
     uint8_t byte = 0;
-    spi_read_bytes(spi, &byte,1);
+    (void)spi_read_bytes(spi, &byte,1);
+    return byte;
 }
 
-void spi_write(spi_handle_t* spi, uint8_t* data, uint32_t length)  {
+void spi_write_bytes(spi_handle_t* spi, uint8_t* data, uint32_t length)  {
 
     for(uint32_t i =0; i< length; i++)  {
         spi_write_byte(spi, data[i]);

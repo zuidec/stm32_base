@@ -1,7 +1,8 @@
-#include "core/comms.h"
-#include "core/uart.h"
-#include "core/crc.h"
 #include <string.h>
+
+#include "drivers/uart/uart.h"
+#include "comms.h"
+#include "crc.h"
 
 #define PACKET_BUFFER_LENGTH    (8)
 

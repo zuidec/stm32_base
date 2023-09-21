@@ -1,4 +1,4 @@
-#include "core/crc.h"
+#include "crc.h"
 
 uint8_t crc8(uint8_t* data, uint32_t length)    {
     uint8_t crc = 0;

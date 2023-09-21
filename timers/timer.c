@@ -1,7 +1,7 @@
-#include "../../include/core/timer.h"
-
 #include <libopencm3/stm32/timer.h>
 #include <libopencm3/stm32/rcc.h>
+
+#include "timer.h"
 
 // FREQ = CPU_FREQ / (PRESCALER -1 ) * (ARR_VALUE - 1)
 // CPU_FREQ = 84 000 000

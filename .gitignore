@@ -4,6 +4,10 @@
 *.elf
 *.map
 *.d
+*.a
+
+obj
 .pio
 .vscode
+stm32_base.code-workspace
 

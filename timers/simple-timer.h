@@ -1,6 +1,8 @@
 #ifndef INC_SIMPLE_TIMER_H
 #define INC_SIMPLE_TIMER_H
-#include "common-defines.h"
+
+#include <stdint.h>
+#include <stdbool.h>
 
 typedef struct simple_timer_t {
   uint64_t wait_time;

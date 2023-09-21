@@ -1,7 +1,8 @@
 #ifndef INC_COMMS_H
 #define INC_COMMS_H
 
-#include "common-defines.h"
+#include <stdint.h>
+#include <stdbool.h>
 
 #define PACKET_PAYLOAD_LENGTH                   (16)
 #define PACKET_LENGTH_BYTES                     (1)

@@ -1,5 +1,5 @@
 
-#include "core/fifo.h"
+#include "fifo.h"
 
 void fifo_buffer_setup(fifo_buffer_t* fifo, uint8_t* buffer, uint32_t size) {
 

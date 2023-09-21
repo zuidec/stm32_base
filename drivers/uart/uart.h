@@ -1,7 +1,8 @@
 #ifndef INC_UART_H
 #define INC_UART_H
 
-#include "common-defines.h"
+#include <stdint.h>
+#include <stdbool.h>
 
 void uart_setup(void);
 void uart_teardown(void);
