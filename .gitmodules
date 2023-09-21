@@ -1,0 +1,6 @@
+[submodule "libopencm3"]
+	path = libopencm3
+	url = https://github.com/libopencm3/libopencm3.git
+[submodule "devices/mpu60X0"]
+	path = devices/mpu60X0
+	url = https://github.com/zuidec/MPU60X0_Driver.git
