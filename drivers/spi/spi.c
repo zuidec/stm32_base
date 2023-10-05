@@ -24,7 +24,7 @@ void spi1_isr(void) {
 
 void spi_setup(spi_handle_t* spi, const uint32_t spi_address)    {
 
-    switch(spi_address) {
+    switch(spi_address) { 
         case SPI1:  {
             spi->spi_base_address = spi_address;
             spi->rcc_address = RCC_SPI1;
