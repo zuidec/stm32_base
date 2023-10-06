@@ -1,0 +1,6 @@
+cd ..
+make clean
+make
+cd testapps
+make clean
+make
