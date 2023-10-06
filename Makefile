@@ -18,8 +18,8 @@ COMMS_DIR		= comms
 TIMERS_DIR		= timers
 OBJ_DIR			= obj
 
-TARGET_LIBNAME = stm32_base
-OPENCM3_LIBNAME		= opencm3_stm32f4
+TARGET_LIBNAME 	= libstm32_base
+OPENCM3_LIBNAME	= opencm3_stm32f4
 
 ###############################################################################
 # Basic Device Setup
@@ -72,6 +72,7 @@ OBJS		+= $(COMMS_DIR)/comms.o
 OBJS		+= $(DRIVERS_DIR)/fifo.o
 OBJS		+= $(DRIVERS_DIR)/uart/uart.o
 OBJS		+= $(DRIVERS_DIR)/spi/spi.o
+OBJS		+= $(DRIVERS_DIR)/i2c/i2c.o
 OBJS		+= $(DEVICES_DIR)/mpu60X0/mpu60X0.o
 
 
@@ -147,7 +148,7 @@ $(TARGET_LIBNAME).a: $(OBJS)
 
 clean:
 	@#printf "  CLEAN\n"
-	$(Q)$(RM) $(GENERATED_BINARIES) generated.* $(OBJS) $(OBJS:%.o=%.d)
+	$(Q)$(RM) $(GENERATED_BINARIES) generated.* $(OBJS) $(OBJS:%.o=%.d) libstm32_base.a
 
 
 .PHONY: images clean elf bin hex srec list
