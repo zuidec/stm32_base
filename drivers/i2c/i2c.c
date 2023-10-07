@@ -9,19 +9,22 @@ fifo_buffer_t* i2c1_isr_fifo;
 fifo_buffer_t* i2c2_isr_fifo;
 fifo_buffer_t* i2c3_isr_fifo;
 
-static void i2c_master_start(i2c_handle_t* i2c, uint8_t rw_bit);
-static void i2c_master_send_address(i2c_handle_t* i2c, uint8_t device_address, uint8_t rw_bit);
-static void i2c_master_send_byte(i2c_handle_t* i2c, uint8_t data);
-static uint8_t i2c_master_read_byte(i2c_handle_t* i2c);
-static void i2c_master_stop(i2c_handle_t* i2c);
+static void i2c_master_start(const i2c_handle_t* i2c, const uint8_t rw_bit);
+static void i2c_master_stop(const i2c_handle_t* i2c);
+static void i2c_master_send_address(const i2c_handle_t* i2c, const uint8_t device_address, const uint8_t rw_bit);
+static void i2c_master_send_byte(const i2c_handle_t* i2c, const uint8_t data);
+static void i2c_master_send_burst(const i2c_handle_t* i2c, const uint8_t* data, const uint16_t bytes_to_send);
+static uint8_t i2c_master_read_byte(const i2c_handle_t* i2c);
+static void i2c_master_read_burst(const i2c_handle_t* i2c, uint8_t* data, const uint16_t bytes_to_read);
+
 void i2c1_isr(void) {
     // Reset interrupt flags
 
     // Catch the data then write it to the fifo buffer
     // Not sure if this will work passing the address of the fifo as a uint32_t
-    if(!fifo_buffer_write(i2c1_isr_fifo, (uint8_t)i2c_read_byte))  {
+   // if(!fifo_buffer_write(i2c1_isr_fifo, (uint8_t)i2c_read_byte))  {
         // Handle write failure
-    }
+   // }
 }
 
 void i2c_setup(i2c_handle_t* i2c, const uint32_t i2c_address, const uint32_t i2c_gpio_port, const uint32_t sda_pin, const uint32_t scl_pin, fifo_buffer_t* fifo)   {
@@ -41,12 +44,8 @@ void i2c_setup(i2c_handle_t* i2c, const uint32_t i2c_address, const uint32_t i2c
             i2c->gpio_port          = i2c_gpio_port;
             i2c->sda_pin            = sda_pin;
             i2c->scl_pin            = scl_pin;
-             I2C_CR1(i2c->i2c_base_address)                = (volatile uint32_t*)I2C_CR1(I2C1_BASE);
-             I2C_SR1(i2c->i2c_base_address)                = (volatile uint32_t*)I2C_SR1(I2C1_BASE);
-             I2C_SR2(i2c->i2c_base_address)                = (volatile uint32_t*)I2C_SR2(I2C1_BASE);
-             I2C_DR(i2c->i2c_base_address)                 = (volatile uint32_t*)I2C_DR(I2C1_BASE);
 
-           // i2c->fifo = fifo;
+            i2c->fifo = fifo;
             i2c1_isr_fifo = fifo;
 
             i2c_peripheral_disable(i2c_address);
@@ -76,7 +75,6 @@ void i2c_setup(i2c_handle_t* i2c, const uint32_t i2c_address, const uint32_t i2c
             // Enable i2c
             i2c_peripheral_enable(I2C1);
 
-            
             break;
         }
         case I2C2:  {
@@ -99,11 +97,36 @@ void i2c_teardown(i2c_handle_t* i2c)    {
 
 }
 
-uint32_t i2c_read_bytes(i2c_handle_t* i2c, uint8_t* data, uint32_t bytes_to_read, uint8_t device_address)   {
+void i2c_read_registers_burst(const i2c_handle_t* i2c, uint8_t* data, const uint16_t bytes_to_read, const uint8_t device_address, const uint8_t device_register)   {
+    //  Burst read sequence
+    //  M:  S AD+w      RA      S AD+r           ACK      ACK...      NACK ST
+    //  S:          ACK     ACK         ACK DATA     Data    ... Data  
+    
+    // Generate start
+    i2c_master_start(i2c, I2C_WRITE);
+    
+    // AD+w
+    i2c_master_send_address(i2c, device_address, I2C_WRITE);
+    
+    // Send Register Address
+    i2c_master_send_byte(i2c, device_register);
+    
+    // Generate restart
+    i2c_master_stop(i2c);
+    i2c_master_start(i2c, I2C_READ);
+    
+    // Send AD+r
+    i2c_master_send_address(i2c, device_address, I2C_READ);
+    
+    // Read the data byte
+    i2c_master_read_burst(i2c, data, bytes_to_read);
+
+    // Stop
+    i2c_master_stop(i2c);    
 
 }
 
-uint8_t i2c_read_byte(i2c_handle_t* i2c, uint8_t device_address, uint8_t device_register)    {
+uint8_t i2c_read_register(i2c_handle_t* i2c, uint8_t device_address, uint8_t device_register)    {
 
     //  Single byte sequence
     //  M:  S AD+w      RA      S AD+r          NACK ST
@@ -134,14 +157,32 @@ uint8_t i2c_read_byte(i2c_handle_t* i2c, uint8_t device_address, uint8_t device_
     return data;
 }
 
-void i2c_write_bytes(i2c_handle_t* i2c, uint8_t* data, uint32_t length, uint8_t device_address) {
-    
+void i2c_write_registers_burst(const i2c_handle_t* i2c, uint8_t* data, const uint16_t bytes_to_send, const uint8_t device_address, const uint8_t device_register) {
+    //  Write sequence
+    //  M:  S AD+w      RAdd        Data        Data    ... Data        STOP
+    //  S:         ACK         ACK        ACK       ACK ...       ACK
+
+    // Generate start
+    i2c_master_start(i2c,I2C_WRITE);
+
+    // Send address
+    i2c_master_send_address(i2c, device_address, I2C_WRITE);
+
+    // Send register address
+    i2c_master_send_byte(i2c,device_register);
+
+    // Send data to be written
+    i2c_master_send_burst(i2c, data, bytes_to_send);
+
+    // Generate stop
+    i2c_master_stop(i2c);
+
 }
 
-void i2c_write_byte(i2c_handle_t* i2c, uint8_t byte, uint8_t device_address, uint8_t device_register)    {
-    //  Single byte sequence
-    //  M:  S AD+w      RAdd        Data      STOP
-    //  S:         ACK         ACK        ACK
+void i2c_write_register(i2c_handle_t* i2c, uint8_t byte, uint8_t device_address, uint8_t device_register)    {
+    //  Write sequence
+    //  M:  S AD+w      RAdd        Data       STOP
+    //  S:         ACK         ACK        ACK  
 
     // Generate start
     i2c_master_start(i2c,I2C_WRITE);
@@ -160,11 +201,8 @@ void i2c_write_byte(i2c_handle_t* i2c, uint8_t byte, uint8_t device_address, uin
 
 }
 
-bool i2c_data_available(i2c_handle_t* i2c)  {
 
-}
-
-static void i2c_master_start(i2c_handle_t* i2c, uint8_t rw_bit) {
+static void i2c_master_start(const i2c_handle_t* i2c, const uint8_t rw_bit) {
     // Generate start
     I2C_CR1(i2c->i2c_base_address) &= ~I2C_CR1_POS;
     if(rw_bit)  {
@@ -174,7 +212,7 @@ static void i2c_master_start(i2c_handle_t* i2c, uint8_t rw_bit) {
     while(!(I2C_SR1(i2c->i2c_base_address) & I2C_SR1_SB))   {}
 }
 
-static void i2c_master_send_address(i2c_handle_t* i2c, uint8_t device_address, uint8_t rw_bit)  {
+static void i2c_master_send_address(const i2c_handle_t* i2c, const uint8_t device_address, const uint8_t rw_bit)  {
     
     volatile uint16_t reset = 0x00;
    
@@ -185,10 +223,9 @@ static void i2c_master_send_address(i2c_handle_t* i2c, uint8_t device_address, u
 
 }
 
-static void i2c_master_send_byte(i2c_handle_t* i2c, uint8_t data)   {
+static void i2c_master_send_byte(const i2c_handle_t* i2c, const uint8_t data)   {
     
     while(!(  I2C_SR1(i2c->i2c_base_address) & I2C_SR1_TxE))   {}
-    //while(!(  I2C_SR1(i2c->i2c_base_address) & I2C_SR1_RxNE))  {}
     I2C_DR(i2c->i2c_base_address) = data;
     while(!( I2C_SR1(i2c->i2c_base_address) & I2C_SR1_TxE))   {}
     while(!( I2C_SR1(i2c->i2c_base_address) & I2C_SR1_BTF))   {}
@@ -196,7 +233,21 @@ static void i2c_master_send_byte(i2c_handle_t* i2c, uint8_t data)   {
     reg = I2C_SR2(i2c->i2c_base_address);
 }
 
-static uint8_t i2c_master_read_byte(i2c_handle_t* i2c)   {
+static void i2c_master_send_burst(const i2c_handle_t* i2c, const uint8_t* data, const uint16_t bytes_to_send)   {
+    
+    volatile uint16_t reg = 0;
+    while(!(  I2C_SR1(i2c->i2c_base_address) & I2C_SR1_TxE))   {}
+    
+    for(uint16_t i = 0; i < bytes_to_send; i++) {
+        I2C_DR(i2c->i2c_base_address) = data[i];
+        while(!( I2C_SR1(i2c->i2c_base_address) & I2C_SR1_TxE))   {}
+        while(!( I2C_SR1(i2c->i2c_base_address) & I2C_SR1_BTF))   {}
+        reg = I2C_SR1(i2c->i2c_base_address);
+        reg = I2C_SR2(i2c->i2c_base_address);
+    }
+}
+
+static uint8_t i2c_master_read_byte(const i2c_handle_t* i2c)   {
     
     while(!( I2C_SR1(i2c->i2c_base_address) & I2C_SR1_RxNE))   {}
     I2C_CR1(i2c->i2c_base_address) |= I2C_CR1_ACK;
@@ -206,7 +257,20 @@ static uint8_t i2c_master_read_byte(i2c_handle_t* i2c)   {
     return data;
 }
 
-static void i2c_master_stop(i2c_handle_t* i2c) {
+static void i2c_master_read_burst(const i2c_handle_t* i2c, uint8_t* data, const uint16_t bytes_to_read)   {
+    
+    for(uint16_t i = 0; i < (bytes_to_read -1); i++) {
+        while(!( I2C_SR1(i2c->i2c_base_address) & I2C_SR1_RxNE))   {}
+        data[i] = I2C_DR(i2c->i2c_base_address);
+        I2C_CR1(i2c->i2c_base_address) |= I2C_CR1_ACK;
+    }
+
+    data[(bytes_to_read-1)] = I2C_DR(i2c->i2c_base_address);
+    volatile uint16_t reg = I2C_SR1(i2c->i2c_base_address);
+    reg = I2C_SR2(i2c->i2c_base_address);
+}
+
+static void i2c_master_stop(const i2c_handle_t* i2c) {
     
     I2C_CR1(i2c->i2c_base_address) &= ~I2C_CR1_ACK;
     I2C_CR1(i2c->i2c_base_address) |= I2C_CR1_STOP;
