@@ -5,6 +5,7 @@
 #include "core/system.h"
 #include "drivers/uart/uart.h"
 #include "drivers/i2c/i2c.h"
+#include "devices/mpu60X0/mpu60X0.h"
 /*#include "../core/system.h"
 #include "../drivers/uart/uart.h"
 #include "../drivers/i2c/i2c.h"*/
@@ -19,7 +20,9 @@
 #define UART2_PORT          (GPIOA)
 #define RX2_PIN             (GPIO3)
 #define TX2_PIN             (GPIO2)
-i2c_handle_t i2c1;
+
+#define MPU_ADDR            (0x68)
+i2c_handle_t i2c1   ={0U};
 uint8_t buffer[128] = {0};
 fifo_buffer_t fifo;
 static void gpio_setup(void)    {
@@ -40,9 +43,10 @@ int main(void)  {
     gpio_setup();
     system_setup();
     uart_setup();
+    
     fifo_buffer_setup(&fifo, buffer, 128);
-    i2c_setup(&i2c1, I2C1_BASE, I2C1_PORT, I2C1_SDA, I2C1_SCL, &fifo);
-    uint8_t data = 0;
+    i2c_setup(&i2c1, (uint32_t)I2C1_BASE, (uint32_t)I2C1_PORT, (uint32_t)I2C1_SDA, (uint32_t)I2C1_SCL, &fifo);
+    volatile uint8_t data = 0;
     uart_write_byte(122);
     gpio_toggle(LED_PORT, LED_PIN);
     uint64_t millis = system_get_ticks();
@@ -52,13 +56,30 @@ int main(void)  {
         if(system_get_ticks()-millis >=2000) {
             millis = system_get_ticks();
             gpio_toggle(LED_PORT, LED_PIN);
-            uart_write_byte(0x00);
+            
+            data = i2c_read_byte(&i2c1, MPU_ADDR, MPU60X0_REG_PWR_MGMT_1);
+            uart_write_byte(data);
+            uart_write_byte(0x20);
+            data = i2c_read_byte(&i2c1, MPU_ADDR, MPU60X0_REG_WHO_AM_I);
+            uart_write_byte(data);
+            uart_write_byte(0x20);
+            i2c_write_byte(&i2c1, (0<<7), MPU_ADDR, MPU60X0_REG_PWR_MGMT_1);
+            //i2c_write_byte(&i2c1, (1<<7), MPU_ADDR, MPU60X0_REG_PWR_MGMT_2);
+            data = i2c_read_byte(&i2c1, MPU_ADDR, MPU60X0_REG_PWR_MGMT_1);
+            uart_write_byte(data);
+            uart_write_byte(0x20);
+            i2c_write_byte(&i2c1, (1<<7), MPU_ADDR, MPU60X0_REG_PWR_MGMT_1);
+            //i2c_write_byte(&i2c1, (1<<7), MPU_ADDR, MPU60X0_REG_PWR_MGMT_2);
+            data = i2c_read_byte(&i2c1, MPU_ADDR, MPU60X0_REG_PWR_MGMT_1);
+            uart_write_byte(data);
+            uart_write_byte(0x0A);
+            /*uart_write_byte(0x00);
             uart_write_byte(0x3A);
             uart_write_byte(0x20);
             uart_write_byte(0x20);
 
             for(uint16_t i=0x00; i<=0xFF; i++)   {
-                data = i2c_read_byte(&i2c1,0x68, i);
+                data = i2c_read_byte(&i2c1,MPU_ADDR, i);
                 uart_write_byte(data);
                 uart_write_byte(0x20);
                 if(i%16==0&&i!=0xFF) {
@@ -69,7 +90,7 @@ int main(void)  {
                     uart_write_byte(0x20);
                 }
                 data = 0x00;
-            }
+            }*/
         }
     }
 }

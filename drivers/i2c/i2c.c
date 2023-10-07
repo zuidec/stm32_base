@@ -32,18 +32,22 @@ void i2c_setup(i2c_handle_t* i2c, const uint32_t i2c_address, const uint32_t i2c
         • Configure the clock control registers 
         • Configure the rise time register
         • Program the I2C_CR1 register to enable the peripheral
-        • Set the START bit in the I2C_CR1 register to generate a Start condition
     */
     
     switch(i2c_address) {
         case I2C1:  {
             // Pass values to i2c_handle to initialize
-            i2c->i2c_base_address = i2c_address;
-            i2c->gpio_port = i2c_gpio_port;
-            i2c->sda_pin = sda_pin;
-            i2c->scl_pin = scl_pin;
+            i2c->i2c_base_address   = i2c_address;
+            i2c->gpio_port          = i2c_gpio_port;
+            i2c->sda_pin            = sda_pin;
+            i2c->scl_pin            = scl_pin;
+             I2C_CR1(i2c->i2c_base_address)                = (volatile uint32_t*)I2C_CR1(I2C1_BASE);
+             I2C_SR1(i2c->i2c_base_address)                = (volatile uint32_t*)I2C_SR1(I2C1_BASE);
+             I2C_SR2(i2c->i2c_base_address)                = (volatile uint32_t*)I2C_SR2(I2C1_BASE);
+             I2C_DR(i2c->i2c_base_address)                 = (volatile uint32_t*)I2C_DR(I2C1_BASE);
+
+           // i2c->fifo = fifo;
             i2c1_isr_fifo = fifo;
-            i2c->fifo = fifo;
 
             i2c_peripheral_disable(i2c_address);
             // Enable GPIO and set alternate function for i2c: all I2C1 are on port B
@@ -77,13 +81,13 @@ void i2c_setup(i2c_handle_t* i2c, const uint32_t i2c_address, const uint32_t i2c
         }
         case I2C2:  {
             i2c->i2c_base_address = i2c_address;
-            i2c2_isr_fifo = i2c->fifo;
+            //i2c2_isr_fifo = i2c->fifo;
 
             break;
         }
         case I2C3:  {
             i2c->i2c_base_address = i2c_address;
-            i2c3_isr_fifo = i2c->fifo;
+           // i2c3_isr_fifo = i2c->fifo;
 
             break;
         }
@@ -131,10 +135,28 @@ uint8_t i2c_read_byte(i2c_handle_t* i2c, uint8_t device_address, uint8_t device_
 }
 
 void i2c_write_bytes(i2c_handle_t* i2c, uint8_t* data, uint32_t length, uint8_t device_address) {
-
+    
 }
 
-void i2c_write_byte(i2c_handle_t* i2c, uint8_t byte, uint8_t device_address)    {
+void i2c_write_byte(i2c_handle_t* i2c, uint8_t byte, uint8_t device_address, uint8_t device_register)    {
+    //  Single byte sequence
+    //  M:  S AD+w      RAdd        Data      STOP
+    //  S:         ACK         ACK        ACK
+
+    // Generate start
+    i2c_master_start(i2c,I2C_WRITE);
+
+    // Send address
+    i2c_master_send_address(i2c, device_address, I2C_WRITE);
+
+    // Send register address
+    i2c_master_send_byte(i2c,device_register);
+
+    // Send data to be written
+    i2c_master_send_byte(i2c,byte);
+
+    // Generate stop
+    i2c_master_stop(i2c);
 
 }
 
@@ -144,52 +166,50 @@ bool i2c_data_available(i2c_handle_t* i2c)  {
 
 static void i2c_master_start(i2c_handle_t* i2c, uint8_t rw_bit) {
     // Generate start
-    I2C1_CR1 &= ~I2C_CR1_POS;
+    I2C_CR1(i2c->i2c_base_address) &= ~I2C_CR1_POS;
     if(rw_bit)  {
-        I2C1_CR1 |= I2C_CR1_ACK;
+        I2C_CR1(i2c->i2c_base_address) |= I2C_CR1_ACK;
     }
-    I2C1_CR1 |= I2C_CR1_START;
-    while(!(I2C1_SR1 & I2C_SR1_SB))   {}
-    //volatile uint16_t reg = I2C1_SR1;
+    I2C_CR1(i2c->i2c_base_address) |= (I2C_CR1_START);
+    while(!(I2C_SR1(i2c->i2c_base_address) & I2C_SR1_SB))   {}
 }
 
 static void i2c_master_send_address(i2c_handle_t* i2c, uint8_t device_address, uint8_t rw_bit)  {
     
     volatile uint16_t reset = 0x00;
-   // i2c_send_7bit_address(i2c->i2c_base_address,device_address, I2C_WRITE);
-    I2C1_DR = (device_address << 1 ) | rw_bit;
-    // Clear ACK
-    while(!(I2C1_SR1 & I2C_SR1_ADDR))   {  
-        if(I2C1_SR1 & I2C_SR1_AF)    {
-            continue;
-        }
-      }
-    reset = I2C1_SR1;
-    reset = I2C1_SR2;
+   
+    I2C_DR(i2c->i2c_base_address) = (device_address << 1 ) | rw_bit;
+    while(!( I2C_SR1(i2c->i2c_base_address) & I2C_SR1_ADDR))   {}
+    reset = I2C_SR1(i2c->i2c_base_address);
+    reset = I2C_SR2(i2c->i2c_base_address);
 
 }
 
 static void i2c_master_send_byte(i2c_handle_t* i2c, uint8_t data)   {
-    while(!(I2C1_SR1 & I2C_SR1_TxE))   {}
-    I2C1_DR = data;
-    while(!(I2C1_SR1 & I2C_SR1_TxE))   {}
-    while(!(I2C1_SR1 & I2C_SR1_BTF))   {}
-    volatile uint16_t reg = I2C1_SR1;
-    reg = I2C1_SR2;
+    
+    while(!(  I2C_SR1(i2c->i2c_base_address) & I2C_SR1_TxE))   {}
+    //while(!(  I2C_SR1(i2c->i2c_base_address) & I2C_SR1_RxNE))  {}
+    I2C_DR(i2c->i2c_base_address) = data;
+    while(!( I2C_SR1(i2c->i2c_base_address) & I2C_SR1_TxE))   {}
+    while(!( I2C_SR1(i2c->i2c_base_address) & I2C_SR1_BTF))   {}
+    volatile uint16_t reg =  I2C_SR1(i2c->i2c_base_address);
+    reg = I2C_SR2(i2c->i2c_base_address);
 }
 
 static uint8_t i2c_master_read_byte(i2c_handle_t* i2c)   {
-    while(!(I2C1_SR1 & I2C_SR1_RxNE))   {}
-    I2C1_CR1 |= I2C_CR1_ACK;
-    uint8_t data = I2C1_DR;
-    volatile uint16_t reg = I2C1_SR1;
-    reg = I2C1_SR2;
+    
+    while(!( I2C_SR1(i2c->i2c_base_address) & I2C_SR1_RxNE))   {}
+    I2C_CR1(i2c->i2c_base_address) |= I2C_CR1_ACK;
+    uint8_t data = I2C_DR(i2c->i2c_base_address);
+    volatile uint16_t reg = I2C_SR1(i2c->i2c_base_address);
+    reg = I2C_SR2(i2c->i2c_base_address);
     return data;
 }
 
 static void i2c_master_stop(i2c_handle_t* i2c) {
-    I2C1_CR1 &= ~I2C_CR1_ACK;
-    I2C1_CR1 |= I2C_CR1_STOP;
-    volatile uint16_t reg = I2C1_SR1;
-    reg = I2C1_SR2;
+    
+    I2C_CR1(i2c->i2c_base_address) &= ~I2C_CR1_ACK;
+    I2C_CR1(i2c->i2c_base_address) |= I2C_CR1_STOP;
+    volatile uint16_t reg = I2C_SR1(i2c->i2c_base_address);
+    reg = I2C_SR2(i2c->i2c_base_address);
 }
