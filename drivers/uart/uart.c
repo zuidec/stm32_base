@@ -1,6 +1,8 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/cm3/nvic.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "uart.h"
 #include "drivers/fifo.h"
@@ -74,6 +76,12 @@ void uart_write(uint8_t* data, const uint32_t length)   {
     }
 }
 
+void uart_write_16(uint16_t data)   {
+
+    // Loop through data and send a byte at a time
+    usart_send_blocking(USART2,data);
+}
+
 void uart_write_byte(uint8_t data)  {
     usart_send_blocking(USART2,(uint16_t)data);
 }
@@ -104,4 +112,16 @@ uint8_t uart_read_byte(void)    {
 
 bool uart_data_available(void)  {
     return !fifo_buffer_empty(&fifo);
+}
+
+void uart_print(const uint8_t* data)   {
+    uint8_t tx_buffer[strlen(data)];
+    sprintf(tx_buffer, data);
+    uart_write(tx_buffer, strlen(tx_buffer));
+}
+
+void uart_println(const uint8_t* data) {
+    uint8_t tx_buffer[strlen(data)];
+    sprintf(tx_buffer, "%s\n", data);
+    uart_write(tx_buffer, strlen(tx_buffer));
 }
