@@ -29,8 +29,8 @@ void i2c1_setup(i2c_handle_t* i2c, const uint32_t sda_pin, const uint32_t scl_pi
 void i2c2_setup(i2c_handle_t* i2c, const uint32_t sda_pin, const uint32_t scl_pin);
 void i2c3_setup(i2c_handle_t* i2c, const uint32_t sda_port,const uint32_t sda_pin, const uint32_t scl_port, const uint32_t scl_pin);
 void i2c_teardown(i2c_handle_t* i2c, bool teardown_gpio_clocks);
-void i2c_set_slow_mode(const i2c_handle_t* i2c);
-void i2c_set_fast_mode(const i2c_handle_t* i2c);
+void i2c_enable_slow_mode(const i2c_handle_t* i2c);
+void i2c_enable_fast_mode(const i2c_handle_t* i2c);
 uint8_t i2c_read_register(const i2c_handle_t* i2c, const uint8_t device_address, const uint8_t device_register);
 void i2c_read_registers_burst(const i2c_handle_t* i2c, uint8_t* data, const uint16_t bytes_to_read, const uint8_t device_address, const uint8_t device_register);
 void i2c_write_register(const i2c_handle_t* i2c, uint8_t byte, const uint8_t device_address, const uint8_t device_register);

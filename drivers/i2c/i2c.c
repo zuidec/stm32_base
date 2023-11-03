@@ -306,7 +306,7 @@ void i2c_write_register(const i2c_handle_t* i2c, const uint8_t byte, const uint8
 
 }
 
-void i2c_set_slow_mode(const i2c_handle_t* i2c) {
+void i2c_enable_slow_mode(const i2c_handle_t* i2c) {
     
     // I2C must be disabled to change the mode
     i2c_peripheral_disable(i2c->i2c_base_address);
@@ -327,7 +327,7 @@ void i2c_set_slow_mode(const i2c_handle_t* i2c) {
 
 }
 
-void i2c_set_fast_mode(const i2c_handle_t* i2c) {
+void i2c_enable_fast_mode(const i2c_handle_t* i2c) {
     
     // I2C must be disabled to change the mode
     i2c_peripheral_disable(i2c->i2c_base_address);
