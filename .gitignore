@@ -11,3 +11,4 @@ obj
 .vscode
 stm32_base.code-workspace
 compile_commands.json
+.cache/
