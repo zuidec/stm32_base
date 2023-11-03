@@ -5,6 +5,7 @@
 
 // FREQ = CPU_FREQ / (PRESCALER -1 ) * (ARR_VALUE - 1)
 // CPU_FREQ = 84 000 000
+
 #define PRESCALER       (84)
 #define ARR_VALUE       (1000)
 
@@ -33,7 +34,7 @@ void timer_pwm_set_duty_cycle(float duty_cycle) {
 
     // CCR = ARR_VALUE * (duty_cycle * 100)
     
-    // Need to check for numbers >1 and <0 ?? not sure about this
+    // Need to check for numbers >100 and <0 
     if(duty_cycle > 100.0f || duty_cycle < 0.0f)  {
         return; // Return if duty cycle is not valid
     }
