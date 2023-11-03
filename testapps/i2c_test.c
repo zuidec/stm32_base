@@ -1,6 +1,7 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/cm3/scb.h>
 #include <libopencm3/stm32/gpio.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -52,11 +53,11 @@ int main(void)  {
     uart_setup();
     
     fifo_buffer_setup(&fifo, buffer, 128);
-    i2c_setup(&i2c1, (uint32_t)I2C1_BASE, (uint32_t)I2C1_PORT, (uint32_t)I2C1_SDA, (uint32_t)I2C1_SCL, &fifo);
+    i2c1_setup(&i2c1, (uint32_t)I2C1_SDA, (uint32_t)I2C1_SCL);
     volatile uint8_t data = 1;
 
-    uart_write("\nBoot complete\n",15);
-    uart_write("Resetting MPU\n",14);
+    uart_write((uint8_t*)"\nBoot complete\n",15);
+    uart_write((uint8_t*)"Resetting MPU\n",14);
     system_delay(100);
 
     i2c_write_register(&i2c1, (1<<7), MPU_ADDR, MPU60X0_REG_PWR_MGMT_1);
@@ -68,41 +69,41 @@ int main(void)  {
     i2c_write_register(&i2c1, 0x02, MPU_ADDR, MPU60X0_REG_CONFIG);
     i2c_write_register(&i2c1, 0x08, MPU_ADDR, MPU60X0_REG_SMPLRT_DIV);
     
-    uart_println("Verifying settings");
+    uart_println((uint8_t*)"Verifying settings");
     //uart_write("Verifying settings\n",19);
     
     volatile uint8_t reg = 0;
     reg = i2c_read_register(&i2c1,MPU_ADDR,MPU60X0_REG_PWR_MGMT_1);    
     if(reg != 0x00)    {
-        uart_println("PWR_MGMT_1 FAIL");
+        uart_println((uint8_t*)"PWRhMGMT_1 FAIL");
         while(data){data++;}
     }
 
     reg = i2c_read_register(&i2c1,MPU_ADDR,MPU60X0_REG_SIGNAL_PATH_RESET);    
     if(reg !=0x00)    {
-        uart_println("SIGNAL_PATH_RESET FAIL");
+        uart_println((uint8_t*)"SIGNAL_PATH_RESET FAIL");
         while(data){data++;}
     }
 
     reg = i2c_read_register(&i2c1,MPU_ADDR,MPU60X0_REG_USER_CTRL);    
     if(reg !=0x00)    {
-        uart_println("USER_CTRL FAIL");
+        uart_println((uint8_t*)"USER_CTRL FAIL");
         while(data){data++;}
     }
 
     reg = i2c_read_register(&i2c1,MPU_ADDR,MPU60X0_REG_CONFIG);    
     if(reg !=0x02)    {
-        uart_println("CONFIG FAIL");
+        uart_println((uint8_t*)"CONFIG FAIL");
         while(data){data++;}
     }
 
     reg = i2c_read_register(&i2c1,MPU_ADDR,MPU60X0_REG_SMPLRT_DIV);    
     if(reg !=0x08)    {
-        uart_println("SMPLRT_DIV FAIL");
+        uart_println((uint8_t*)"SMPLRT_DIV FAIL");
         while(data){data++;}
     }
 
-    uart_println("Settings verified");
+    uart_println((uint8_t*)"Settings verified");
     gpio_toggle(LED_PORT, LED_PIN);
     uint64_t millis = system_get_ticks();
     volatile int16_t value = 0;
