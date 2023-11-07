@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <drivers/uart/uart.h>
+
 #define PACKET_PAYLOAD_LENGTH                   (16)
 #define PACKET_LENGTH_BYTES                     (1)
 #define PACKET_CRC_BYTES                        (1)
@@ -34,7 +36,7 @@ typedef struct comms_packet_t   {
     uint8_t crc;
 } comms_packet_t;
 
-void comms_setup(void);
+void comms_setup(uart_t* uart);
 void comms_update(void);
 
 bool comms_packets_available(void);

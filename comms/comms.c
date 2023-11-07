@@ -6,6 +6,8 @@
 
 #define PACKET_BUFFER_LENGTH    (8)
 
+static uart_t* comms_uart;
+
 typedef enum comms_state_t  {
     CommsState_length,
     CommsState_payload,
@@ -65,25 +67,26 @@ bool comms_is_single_byte_packet(const comms_packet_t* packet, uint8_t byte)  {
 }
 
 
-void comms_setup(void)  {
+void comms_setup(uart_t* uart)  {
 
     // Initialize the retransmit and ack packet structure
     comms_create_single_byte_packet(&re_tx_packet, PACKET_RE_TX_PAYLOAD);
     comms_create_single_byte_packet(&ack_packet, PACKET_ACK_PAYLOAD);
-
+    
+    comms_uart = uart; 
 }
 
 void comms_update(void) {
-    while (uart_data_available())   {
+    while (uart_data_available(comms_uart))   {
         switch (state)  {
             case CommsState_length:  {
-                temporary_packet.length = uart_read_byte();
+                temporary_packet.length = uart_read_byte(comms_uart);
                 state = CommsState_payload;
                 break;
             }
 
             case CommsState_payload:    {
-                temporary_packet.payload[data_byte_count++] = uart_read_byte();
+                temporary_packet.payload[data_byte_count++] = uart_read_byte(comms_uart);
                 if(data_byte_count >= PACKET_PAYLOAD_LENGTH )   {
                     data_byte_count = 0;
                     state = CommsState_crc;
@@ -92,7 +95,7 @@ void comms_update(void) {
             }
 
             case CommsState_crc:    {
-                temporary_packet.crc = uart_read_byte();
+                temporary_packet.crc = uart_read_byte(comms_uart);
                 
                 if(temporary_packet.crc != comms_compute_crc(&temporary_packet))    {
                     comms_write(&re_tx_packet);
@@ -136,7 +139,7 @@ bool comms_packets_available(void)  {
 }
 
 void comms_write(comms_packet_t* packet)    {
-    uart_write((uint8_t*)packet, PACKET_LENGTH);
+    uart_write(comms_uart, (uint8_t*)packet, PACKET_LENGTH);
     memcpy(&last_tx_packet,packet, sizeof(comms_packet_t));
 
 }
