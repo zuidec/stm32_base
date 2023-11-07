@@ -1,5 +1,4 @@
 #include <libopencm3/stm32/rcc.h>
-#include <libopencm3/stm32/usart.h>
 #include <libopencm3/cm3/nvic.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -189,13 +188,13 @@ bool uart_data_available(const uart_t* uart)  {
 }
 
 void uart_print(const uart_t* uart, const uint8_t* data)   {
-    uint8_t tx_buffer[strlen(data)];
-    sprintf(tx_buffer, "%s", data);
+    uint8_t tx_buffer[strlen((char*)data)];
+    sprintf((char*)tx_buffer, "%s", data);
     uart_write(uart, tx_buffer, strlen((char*)tx_buffer));
 }
 
 void uart_println(const uart_t* uart, const uint8_t* data) {
-    uint8_t tx_buffer[strlen(data)];
-    sprintf(tx_buffer, "%s\n", data);
+    uint8_t tx_buffer[strlen((char*)data)];
+    sprintf((char*)tx_buffer, "%s\n", data);
     uart_write(uart, tx_buffer, strlen((char*)tx_buffer));
 }

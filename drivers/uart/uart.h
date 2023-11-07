@@ -1,9 +1,11 @@
 #ifndef INC_UART_H
 #define INC_UART_H
 
-#include "drivers/fifo.h"
+#include <libopencm3/stm32/usart.h>
 #include <stdint.h>
 #include <stdbool.h>
+
+#include "drivers/fifo.h"
 
 typedef struct uart_t   {
         uint32_t uart_base;
