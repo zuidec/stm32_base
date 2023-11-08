@@ -2,13 +2,22 @@
 
 function usage() {
 
-        echo "Usage: $0 [-f firmware] -h "
+        scriptname=$(basename "$0")
+        echo "Usage: $scriptname [-f firmware] -h "
         echo ""
         echo "      -f [firmware_file]  Firmware file to be loaded to board,"
         echo "                          can be in .bin or .elf format"
         echo ""
         echo "      -h                  Show this help message"
+        echo ""
 }
+
+if [[ $# -eq 0 ]]; then
+        echo "No arguments provided"
+        echo ""
+        usage
+        exit 1
+fi
 
 while getopts "hf:" flag
 do
