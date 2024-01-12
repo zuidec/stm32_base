@@ -75,32 +75,37 @@ int main(void)  {
     system_delay(100);
     i2c_write_register(&i2c1, 0x07, MPU_ADDR, MPU60X0_REG_USER_CTRL);
     system_delay(100);
+    /*
     i2c_write_register(&i2c1, 0x00, MPU_ADDR, MPU60X0_REG_PWR_MGMT_1);
     i2c_write_register(&i2c1, 0x02, MPU_ADDR, MPU60X0_REG_CONFIG);
     i2c_write_register(&i2c1, 0x08, MPU_ADDR, MPU60X0_REG_SMPLRT_DIV);
+    */
+    i2c_write_register(&i2c1, 0x18, MPU_ADDR, MPU60X0_REG_GYRO_CONFIG);
+    i2c_write_register(&i2c1, 0x18, MPU_ADDR, MPU60X0_REG_ACCEL_CONFIG);
+    i2c_write_register(&i2c1, 0x01, MPU_ADDR, MPU60X0_REG_PWR_MGMT_1);
     
     uart_println(&uart2, (uint8_t*)"Verifying settings");
     //uart_write("Verifying settings\n",19);
     
     volatile uint8_t reg = 0;
     reg = i2c_read_register(&i2c1,MPU_ADDR,MPU60X0_REG_PWR_MGMT_1);    
-    if(reg != 0x00)    {
-        uart_println(&uart2, (uint8_t*)"PWRhMGMT_1 FAIL");
-        while(data){data++;}
+    if(reg != 0x01)    {
+        uart_println(&uart2, (uint8_t*)"PWR MGMT_1 FAIL");
+        //while(data){data++;}
     }
 
     reg = i2c_read_register(&i2c1,MPU_ADDR,MPU60X0_REG_SIGNAL_PATH_RESET);    
     if(reg !=0x00)    {
         uart_println(&uart2, (uint8_t*)"SIGNAL_PATH_RESET FAIL");
-        while(data){data++;}
+        //while(data){data++;}
     }
 
     reg = i2c_read_register(&i2c1,MPU_ADDR,MPU60X0_REG_USER_CTRL);    
     if(reg !=0x00)    {
         uart_println(&uart2, (uint8_t*)"USER_CTRL FAIL");
-        while(data){data++;}
+        //while(data){data++;}
     }
-
+/*
     reg = i2c_read_register(&i2c1,MPU_ADDR,MPU60X0_REG_CONFIG);    
     if(reg !=0x02)    {
         uart_println(&uart2, (uint8_t*)"CONFIG FAIL");
@@ -112,7 +117,7 @@ int main(void)  {
         uart_println(&uart2, (uint8_t*)"SMPLRT_DIV FAIL");
         while(data){data++;}
     }
-
+*/
     uart_println(&uart2, (uint8_t*)"Settings verified");
     gpio_toggle(LED_PORT, LED_PIN);
     uint64_t millis = system_get_ticks();
@@ -127,39 +132,39 @@ int main(void)  {
             
             i2c_read_registers_burst(&i2c1,&buffer,6,MPU_ADDR, MPU60X0_REG_ACCEL_XOUT_H);
             value = (int16_t)((buffer[0] << 8) | buffer[1]);
-            value = value*16384;
+            value = value/2048;
             buf_size = sprintf(output, "Accel x: %8i",value);
             uart_write(&uart2, output, buf_size);
             buffer_reset(&output[0], 128);//memset(&output[0], 0, 128);
             
             value = (int16_t)((buffer[2] << 8) | buffer[3]);
-            value = value*16384;
+            value = value/2048;
             buf_size = sprintf(output, " Accel y: %8i",value);
             uart_write(&uart2, output, buf_size);
             buffer_reset(&output[0], 128);//memset(&output[0], 0, 128);
             
             value = (int16_t)((buffer[4] << 8) | buffer[5]);
-            value = value*16384;
+            value = value/2048;
             buf_size = sprintf(output, " Accel z: %8i",value);
             uart_write(&uart2, output, buf_size);
             buffer_reset(&output[0], 128);//memset(&output[0], 0, 128);
             buffer_reset(&buffer[0], 128);//memset(&buffer[0], 0, 128);
 
-            i2c_read_registers_burst(&i2c1,&buffer,6,MPU_ADDR, MPU60X0_REG_ACCEL_XOUT_H);
+            i2c_read_registers_burst(&i2c1,&buffer,6,MPU_ADDR, MPU60X0_REG_GYRO_XOUT_H);
             value = (int16_t)((buffer[0] << 8) | buffer[1]);
-            value = value/131;
+            value = value/16;
             buf_size = sprintf(output, " Gyro x: %8i",value);
             uart_write(&uart2, output, buf_size);
             buffer_reset(&output[0], 128);//memset(&output[0], 0, 128);
             
             value = (int16_t)((buffer[2] << 8) | buffer[3]);
-            value = value/131;
+            value = value/16;
             buf_size = sprintf(output, " Gyro y: %8i",value);
             uart_write(&uart2, output, buf_size);
             buffer_reset(&output[0], 128);//memset(&output[0], 0, 128);
             
             value = (int16_t)((buffer[4] << 8) | buffer[5]);
-            value = value/131;
+            value = value/16;
             buf_size = sprintf(output, " Gyro z: %8i \n",value);
             uart_write(&uart2, output, buf_size);
             buffer_reset(&output[0], 128);//memset(&output[0], 0, 128);
